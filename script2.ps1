@@ -132,4 +132,5 @@ if($SMBMaps.LocalPath -contains $SMBLetter -and $SMBMaps.RemotePath -contains $S
 
 $Exports | Export-Csv -Path "$SMBPath\$ExportFileName" -Encoding UTF8 -Delimiter ";" -NoTypeInformation -Append
 
-Add-Content "$SMBPath\$ExportFileName" "Presta $IDPresta; Date $Date"
+$Exports | Add-Member -MemberType NoteProperty -Name Presta -Value $IDPresta
+$Exports | Add-Member -MemberType NoteProperty -Name Date -Value $Date

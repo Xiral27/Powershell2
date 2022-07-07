@@ -46,7 +46,6 @@ if($SMBMaps.LocalPath -contains $SMBLetter -and $SMBMaps.RemotePath -contains $S
 }
 
 $MigrateImport = Import-Csv -Path "$SMBPath\$MigrateFile" -Encoding UTF8 -Delimiter ";"
-$MigrateImport = $MigrateImport[0..($MigrateImport.Count-2)]
 
 $DoneImport = Import-Csv -Path "$SMBPath\$MigratePC" -Encoding UTF8 -Delimiter ";"
 
@@ -62,3 +61,7 @@ Foreach($Computer in $MigrateImport){
         $ToChange++
     }
 }
+
+Write-Host "Le nombre de PC migré est de $DoneCount"
+Write-Host "Le nombre de PC qui reste à faire est de $ToDo"
+Write-Host "Le nombre de PC à changer est de $ToChange"

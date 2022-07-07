@@ -45,7 +45,6 @@ if($SMBMaps.LocalPath -contains $SMBLetter -and $SMBMaps.RemotePath -contains $S
 
 
 $Exports = Import-Csv -Path "$SMBPath\$ExportFileName" -Encoding UTF8 -Delimiter ";"
-$Exports = $Exports[0..($Exports.Count-2)]
 
 Foreach($Computer in $Exports){
     
