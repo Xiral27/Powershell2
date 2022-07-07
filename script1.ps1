@@ -14,6 +14,10 @@ $Intervenants = Import-CSV -Path ($WorkingFolder + "\" + $IntervenantsCSVName) -
 
 $DN = "OU=$OU,DC=$($DomainName.Split('.')[0]),DC=$($DomainName.Split('.')[1])"
 
+$parentOU =  $DN.Substring($OU.Length+4)
+
+$Password = ConvertTo-SecureString "Pa55W0rd" -AsPlainText -Force 
+
 ############################################################################################"
 ### Date ###
 ############
@@ -46,15 +50,16 @@ $EndDay = $EndDay.ToString("MM/dd/yyyy")
 
 Write-Host "La date de fin des intervenants sera le $EndDay"
 
-exit
-
 ##################################################################
 ## Création de l'OU ##
 ######################
 
+
+
 if (Get-ADOrganizationalUnit -Filter "distinguishedName -eq '$DN'") {
   Write-Host "$OU already exists."
 } else {
+  Write-Host "Création de l'OU : $OU"
   New-ADOrganizationalUnit -Name $OU -Path $parentOU
 }
 
@@ -64,12 +69,12 @@ if (Get-ADOrganizationalUnit -Filter "distinguishedName -eq '$DN'") {
 
 #Vérification si le groupe "Intervenants" existe
 
-if($Null -eq (Get-ADGroup -Filter "Name -eq $GroupName")){
+if(-not((Get-ADGroup -Filter * | Select-Object Name).Name -contains $GroupName)){
     Write-Host "Création du groupe $GroupName"
 
-    New-ADGroup -Name $GroupName -GroupScope Global -Path ""
+    New-ADGroup -Name $GroupName -GroupScope Global -Path $DN
 }else{
-    Write-Host "Le groupe $GroupeName est déjà créé"
+    Write-Host "Le groupe $GroupName est déjà créé"
 }
 
 ##################################################################
@@ -87,26 +92,23 @@ Foreach($User in $Intervenants){
 
     #Vérification si compte existe
     if (Get-ADUser -Filter "sAMAccountName -eq '$SAM'") {#Si SAM existe
-        
+        Write-host "débug 1"
         $ADUser = Get-ADUser -Identity $SAM
 
         #Vérifie si c'est la même personne
-        if($ADUser.GivenName -eq $LastName -and $ADUser.Surname -eq $FirstName){ # Si même nom&prenom
+        if($ADUser.GivenName -eq $Firstname -and $ADUser.Surname -eq $LastName){ # Si même nom&prenom
             #Réactivation du compte & Expiration
             Enable-ADAccount -Identity $SAM
             Set-ADAccountExpiration -Identity $SAM -DateTime $EndDay
+            Write-host "débug 2"
             Continue
         }else{
+            Write-host "débug 3"
             $SAM = ($FirstName + "." + "$LastName").ToLower()
         }
     }
-
-    New-ADUser -SamAccountName $SAM -Path 
-    Set-ADAccountExpiration -Identity $SAM -DateTime $EndDay
+    Write-Host "débug 4"
+    New-ADUser -GivenName $Firstname -Surname $LastName -Name $SAM -Path $DN -AccountPassword $Password 
+    Add-ADGroupMember -Identity $GroupName -Members $SAM
+    Set-ADAccountExpiration -Identity $SAM -DateTime $EndDay 
 }
-
-
-
-exit
-
-# :: Template
