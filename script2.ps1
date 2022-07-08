@@ -1,31 +1,33 @@
 # Script qui fait un export de la configuration contenant : nom du poste, version TPM, Type de CPU, RAM, NIC, DIsk size, OS version
 #
-# Réalisation par Evan BITIC, Alexis DOUANNES, Théo DUCOIN, Kevin chevreuille
+# Réalisation par Evan BITIC, Alexis DOUANNES, Théo DUCOIN, Kevin chevreuil
 #
 #####
 
-$v = $true
-$SMBLetter = "S:"
-$SMBPath = "\\10.0.0.107\shared"
-$ExportFileName = "inventaire.csv"
+$v = $true # Mode verbose
+$SMBLetter = "S:" # Lettre du partage réseau
+$SMBPath = "\\10.0.0.107\shared" # Chemin du réseau
+$ExportFileName = "inventaire.csv" # Fichier d'inventaire
 
-$IDPresta = "08"
+$IDPresta = "08" # Id du presta
 
 
 ## Script ##########
 
+# Récupération de la date du jour
 $Date = Get-Date -format "dd/MM/yyyy à HH:mm"
 
+# Initialisation de la variable
 $Exports = New-Object -TypeName PSObject
 
 # Vérification si le script est lancé en tant d'admin
-
 $currentPrincipal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
 $isAdmin = $currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 
 # Nom de machine
 $E_ComputerName = (Get-WMIObject win32_operatingsystem).PSComputerName
 
+# Ajout dans le PSObject 
 $Exports | Add-Member -MemberType NoteProperty -Name Hostname -Value $E_ComputerName
 
 
@@ -52,6 +54,7 @@ $E_TPM = "Not Admin"
 
 }
 
+# Ajout dans le PSObject 
 $Exports | Add-Member -MemberType NoteProperty -Name TPM -Value $E_TPM
 
 # Type de processeur ###########
@@ -63,6 +66,7 @@ Write-Host "Le type de processeur est :"
 Write-Host $E_CPU
 }
 
+# Ajout dans le PSObject 
 $Exports | Add-Member -MemberType NoteProperty -Name CPU -Value $E_CPU
 
 # Taille de la RAM ###########
@@ -74,6 +78,7 @@ Write-Host "La taille de la RAM, arrondi à l'entier supérieur, en Gb est :"
 Write-Host ([math]::Round($E_RAM)) "Gb"
 }
 
+# Ajout dans le PSObject 
 $Exports | Add-Member -MemberType NoteProperty -Name RAM -Value ([math]::Round($E_RAM))
 
 ## Disk ###########
@@ -85,12 +90,14 @@ Write-Host "La taille du disque où est installé Windows, arrondi à l'entier supé
 Write-Host ([math]::Round($E_DiskSpace)) "Gb"
 }
 
+# Ajout dans le PSObject 
 $Exports | Add-Member -MemberType NoteProperty -Name DiskSpace -Value ([math]::Round($E_DiskSpace))
 
 ## Os system ###########
 
 $E_OS = (Get-WMIObject win32_operatingsystem).Caption
 
+# Ajout dans le PSObject 
 $Exports | Add-Member -MemberType NoteProperty -Name OS -Value $E_OS
 
 # Vitesse de la carte réseau ###########
@@ -103,6 +110,7 @@ Write-Host "La vitesse de la carte réseau, arrondi à l'entier supérieur, en Mb e
 Write-Host ([math]::Round($E_NICSpeed)) "Mb"
 }
 
+# Ajout dans le PSObject 
 $Exports | Add-Member -MemberType NoteProperty -Name NICSpeed -Value ([math]::Round($E_NICSpeed))
 
 ############################################
@@ -130,7 +138,9 @@ if($SMBMaps.LocalPath -contains $SMBLetter -and $SMBMaps.RemotePath -contains $S
     New-SmbMapping -LocalPath $SMBLetter -RemotePath $SMBPath
 }
 
-$Exports | Export-Csv -Path "$SMBPath\$ExportFileName" -Encoding UTF8 -Delimiter ";" -NoTypeInformation -Append
-
+# Ajout dans le PSObject 
 $Exports | Add-Member -MemberType NoteProperty -Name Presta -Value $IDPresta
 $Exports | Add-Member -MemberType NoteProperty -Name Date -Value $Date
+
+
+$Exports | Export-Csv -Path "$SMBPath\$ExportFileName" -Encoding UTF8 -Delimiter ";" -NoTypeInformation -Append

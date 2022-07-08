@@ -1,8 +1,12 @@
-# :: Import module ad 
+# Script qui fait un export de la configuration contenant : nom du poste, version TPM, Type de CPU, RAM, NIC, DIsk size, OS version
+#
+# Réalisation par Evan BITIC, Alexis DOUANNES, Théo DUCOIN, Kevin chevreuil
+#
+#####
 
 #Variable
 
-$DomainName = "esgi-src.ads"
+$DomainName = "esgi-src.ads" 
 $IntervenantsCSVName = "Intervenants.csv"
 $OU = "Intervenants"
 $GroupName = "Intervenants" # Nom du groupe d'intervenants dans l'AD
@@ -12,11 +16,11 @@ $GroupName = "Intervenants" # Nom du groupe d'intervenants dans l'AD
 $WorkingFolder = Split-Path $MyInvocation.MyCommand.Path -Parent
 $Intervenants = Import-CSV -Path ($WorkingFolder + "\" + $IntervenantsCSVName) -Encoding UTF8 -Delimiter ";"
 
-$DN = "OU=$OU,DC=$($DomainName.Split('.')[0]),DC=$($DomainName.Split('.')[1])"
+$DN = "OU=$OU,DC=$($DomainName.Split('.')[0]),DC=$($DomainName.Split('.')[1])" # Génération du nom de DN enfant
 
-$parentOU =  $DN.Substring($OU.Length+4)
+$parentOU =  $DN.Substring($OU.Length+4) # Récupération du DN parents
 
-$Password = ConvertTo-SecureString "Pa55W0rd" -AsPlainText -Force 
+$Password = ConvertTo-SecureString "Pa55W0rd" -AsPlainText -Force # Création du mot de passe
 
 ############################################################################################"
 ### Date ###
@@ -27,16 +31,13 @@ $now = Get-Date
 
 write-host "`n=== Nous sommes le $now, il y a $($Intervenants.Count) intervenants pour cette semaine ==="
 
-# Récupération du jour de la semaine
-$day = $now.DayOfWeek.value__
-
-#Date de fin
-
 Write-Host "Préparation des $($Intervenants.Count) comptes"
+
+# Récupération du jour de la semaine
 $currentDay = $now.DayOfWeek.value__
 
 # Détection de la semaine
-if($day -ge 5){ # Si semaine prochaine
+if($currentDay -ge 5){ # Si semaine prochaine
     for($i = 0;($i + $currentDay) -lt 8;$i++){}
 
     $EndDay = $now.AddDays($i + 4)
@@ -53,8 +54,6 @@ Write-Host "La date de fin des intervenants sera le $EndDay"
 ##################################################################
 ## Création de l'OU ##
 ######################
-
-
 
 if (Get-ADOrganizationalUnit -Filter "distinguishedName -eq '$DN'") {
   Write-Host "$OU already exists."
@@ -87,12 +86,11 @@ Foreach($User in $Intervenants){
 
     Write-Host "Utilisateur : $LastName $FirstName"
 
-        
+    # Génération du SAM
     $SAM = ($FirstName.SubString(0,1) + "." + $LastName).ToLower()
 
     #Vérification si compte existe
     if (Get-ADUser -Filter "sAMAccountName -eq '$SAM'") {#Si SAM existe
-        Write-host "débug 1"
         $ADUser = Get-ADUser -Identity $SAM
 
         #Vérifie si c'est la même personne
@@ -100,15 +98,18 @@ Foreach($User in $Intervenants){
             #Réactivation du compte & Expiration
             Enable-ADAccount -Identity $SAM
             Set-ADAccountExpiration -Identity $SAM -DateTime $EndDay
-            Write-host "débug 2"
             Continue
         }else{
-            Write-host "débug 3"
             $SAM = ($FirstName + "." + "$LastName").ToLower()
         }
     }
-    Write-Host "débug 4"
+
+    # Création de l'utilisateur
     New-ADUser -GivenName $Firstname -Surname $LastName -Name $SAM -Path $DN -AccountPassword $Password 
+
+    # Ajout de l'utilisateur au group Intervenants
     Add-ADGroupMember -Identity $GroupName -Members $SAM
+
+    # Définition de la date d'expiration
     Set-ADAccountExpiration -Identity $SAM -DateTime $EndDay 
 }

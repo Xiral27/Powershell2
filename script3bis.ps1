@@ -1,24 +1,26 @@
 ﻿# Script qui fait un export de la configuration contenant : nom du poste, version TPM, Type de CPU, RAM, NIC, DIsk size, OS version
 #
-# Réalisation par Evan BITIC, Alexis DOUANNES, Théo DUCOIN, Kevin chevreuille
+# Réalisation par Evan BITIC, Alexis DOUANNES, Théo DUCOIN, Kevin chevreuil
 #
 #####
 
-$v = $true
-$SMBLetter = "S:"
-$SMBPath = "\\10.0.0.107\shared"
+$v = $true # Mode verbose
+$SMBLetter = "S:" # Lettrre du partage
+$SMBPath = "\\10.0.0.107\shared" # Chemin du partage
 
-$MigrateFile = "Migrate_status.csv"
-$MigratePC = "MigratePC.csv"
+$MigrateFile = "Migrate_status.csv" # Fichier des pc à migrer
+$MigratePC = "MigratePC.csv" # Fichier des pc migré
 
-$IDPresta = "08"
+$IDPresta = "08" # ID du presta
 
 ## Script ##########
 
+# initialisation des compteurs
 $DoneCount = 0
 $ToDo = 0
 $ToChange = 0
 
+# Récupération de la date
 $Date = Get-Date -format "dd/MM/yyyy à HH:mm"
 
 ############################################
@@ -45,19 +47,21 @@ if($SMBMaps.LocalPath -contains $SMBLetter -and $SMBMaps.RemotePath -contains $S
     New-SmbMapping -LocalPath $SMBLetter -RemotePath $SMBPath
 }
 
+# Récupération de fichier des PC à migrer
 $MigrateImport = Import-Csv -Path "$SMBPath\$MigrateFile" -Encoding UTF8 -Delimiter ";"
 
+# Récupération de fichier des PC migré
 $DoneImport = Import-Csv -Path "$SMBPath\$MigratePC" -Encoding UTF8 -Delimiter ";"
 
 
-###
+
 
 Foreach($Computer in $MigrateImport){
-    if($DoneImport.Hostname -contains $Computer.Hostname){
+    if($DoneImport.Hostname -contains $Computer.Hostname){ # Vérifie si le PC est migré
         $DoneCount++
-    }elseif($Computer.Status -like "OK*" -and -not($DoneImport.Hostname -contains $Computer.Hostname)){
+    }elseif($Computer.Status -like "OK*" -and -not($DoneImport.Hostname -contains $Computer.Hostname)){ # Vérifie si le PC est a migré
         $ToDo++
-    }else{
+    }else{ # Donne le nombre de PC à changer
         $ToChange++
     }
 }
